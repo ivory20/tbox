@@ -38,13 +38,19 @@ static tb_long_t tb_directory_walk_remove(tb_char_t const* path, tb_file_info_t 
     tb_assert_and_check_return_val(path && info, TB_DIRECTORY_WALK_CODE_END);
 
     // remove file
-    if (info->type == TB_FILE_TYPE_FILE) tb_file_remove(path);
+    if (info->type == TB_FILE_TYPE_FILE)
+    {
+        tb_bool_t ok = tb_file_remove(path);
+        tb_trace_i("remove file: %s %d %d", path, ok, GetLastError());
+    }
     // remove directory
     else if (info->type == TB_FILE_TYPE_DIRECTORY)
     {
+        tb_bool_t ok = tb_false;
         tb_wchar_t temp[TB_PATH_MAXN];
         if (tb_atow(temp, path, TB_PATH_MAXN) != -1)
-            RemoveDirectoryW(temp);
+            ok = (tb_bool_t)RemoveDirectoryW(temp);
+        tb_trace_i("remove dir: %s %d %d", path, ok, GetLastError());
     }
     return TB_DIRECTORY_WALK_CODE_CONTINUE;
 }
@@ -213,6 +219,7 @@ tb_bool_t tb_directory_create(tb_char_t const* path)
 }
 tb_bool_t tb_directory_remove(tb_char_t const* path)
 {
+    tb_trace_i("tb_directory_remove: %s", path);
     // check
     tb_assert_and_check_return_val(path, tb_false);
 
@@ -224,7 +231,9 @@ tb_bool_t tb_directory_remove(tb_char_t const* path)
     tb_directory_walk_impl(full, -1, tb_false, tb_directory_walk_remove, tb_null);
 
     // remove it
-    return RemoveDirectoryW(full)? tb_true : tb_false;
+    tb_bool_t ok = RemoveDirectoryW(full)? tb_true : tb_false;
+        tb_trace_i("remove end: %s %d %d", path, ok, GetLastError());
+        return ok;
 }
 tb_size_t tb_directory_home(tb_char_t* path, tb_size_t maxn)
 {
